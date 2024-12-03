@@ -13,13 +13,14 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
-find_package(pluginlib REQUIRED)
+find_package(message_filters REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(PCL REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(pcl_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(GTSAM REQUIRED)
+
 if(PCL_FOUND)
   message(WARNING "PCL_VER: ${PCL_VERSION}, and PCL_DIR: ${PCL_INCLUDE_DIRS}")
 endif()
@@ -41,10 +42,8 @@ include_directories(
 set(dependencies
   rclcpp
   geometry_msgs
-  pluginlib
   nav_msgs
-  nav2_util
-  nav2_core
+  message_filters
   tf2
 )
 
