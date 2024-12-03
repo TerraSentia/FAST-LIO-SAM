@@ -7,23 +7,17 @@ set(CMAKE_CXX_FLAGS "-std=c++17 -pthread -fexceptions -g -ggdb") #c++17, for par
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -Wextra ${CMAKE_CXX_FLAGS}")
 
-### get packages
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  roslib
-  rosbag
-  std_msgs
-  geometry_msgs
-  nav_msgs
-  sensor_msgs
-  visualization_msgs
-  tf
-  tf_conversions
-  pcl_ros
-  pcl_conversions
-  message_filters
-)
+
+
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(tf2 REQUIRED)
 find_package(PCL REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(pcl_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(GTSAM REQUIRED)
 if(PCL_FOUND)
@@ -36,24 +30,34 @@ if(GTSAM_FOUND)
   message(WARNING "GTSAM_VER: ${GTSAM_VERSION}, and GTSAM DIR: ${GTSAM_INCLUDE_DIR}")
 endif()
 
-catkin_package() #this automatically adds/installs the results of build
-
-### get packages' headers
 include_directories(
   include
-	${catkin_INCLUDE_DIRS}
+  ${ament_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
   ${GTSAM_INCLUDE_DIR}
 )
 
-###########
-## Build ##
-###########
-### main
-set(COMMON_LIBS ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${EIGEN3_LIBS} gtsam)
-add_library(${PROJECT_NAME}_modules src/loop_closure.cpp src/fast_lio_sam.cpp)
-target_link_libraries(${PROJECT_NAME}_modules ${COMMON_LIBS})
+set(dependencies
+  rclcpp
+  geometry_msgs
+  pluginlib
+  nav_msgs
+  nav2_util
+  nav2_core
+  tf2
+)
 
-add_executable(${PROJECT_NAME}_node src/main.cpp)
+set(COMMON_LIBS 
+  ${PCL_LIBRARIES} 
+  ${EIGEN3_LIBS} 
+  gtsam
+)
+
+add_library(${PROJECT_NAME}_modules src/loop_closure.cpp src/fast_lio_sam_2.cpp)
+ament_target_dependencies(${PROJECT_NAME}_modules ${COMMON_LIBS} ${dependencies})
+target_link_libraries(${PROJECT_NAME}_modules ${COMMON_LIBS} ${dependencies})
+
+add_executable(${PROJECT_NAME}_node src/ros2_main.cpp)
+ament_target_dependencies(${PROJECT_NAME}_node ${COMMON_LIBS} ${dependencies})
 target_link_libraries(${PROJECT_NAME}_node ${COMMON_LIBS} ${PROJECT_NAME}_modules)
