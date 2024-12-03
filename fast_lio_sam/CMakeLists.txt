@@ -47,16 +47,29 @@ set(dependencies
   tf2
 )
 
-set(COMMON_LIBS 
-  ${PCL_LIBRARIES} 
-  ${EIGEN3_LIBS} 
-  gtsam
-)
-
 add_library(${PROJECT_NAME}_modules src/loop_closure.cpp src/fast_lio_sam_2.cpp)
-ament_target_dependencies(${PROJECT_NAME}_modules ${COMMON_LIBS} ${dependencies})
-target_link_libraries(${PROJECT_NAME}_modules ${COMMON_LIBS} ${dependencies})
+ament_target_dependencies(${PROJECT_NAME}_modules ${dependencies})
+target_link_libraries(${PROJECT_NAME}_modules ${dependencies})
 
 add_executable(${PROJECT_NAME}_node src/ros2_main.cpp)
-ament_target_dependencies(${PROJECT_NAME}_node ${COMMON_LIBS} ${dependencies})
-target_link_libraries(${PROJECT_NAME}_node ${COMMON_LIBS} ${PROJECT_NAME}_modules)
+ament_target_dependencies(${PROJECT_NAME}_node ${dependencies})
+target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_modules)
+
+install(
+  DIRECTORY include/
+  DESTINATION include
+)
+
+install(TARGETS ${PROJECT_NAME}_node
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+)
+
+
+ament_export_dependencies(rosidl_default_runtime rclcpp) 
+ament_export_include_directories(include)
+ament_export_libraries(${PROJECT_NAME}_modules)
+
+ament_package()

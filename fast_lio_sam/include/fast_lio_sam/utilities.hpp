@@ -1,17 +1,14 @@
-#ifndef FAST_LIO_SAM_UTILITIES_HPP
-#define FAST_LIO_SAM_UTILITIES_HPP
-
+#pragma once
 ///// common headers
 #include <string>
 ///// ROS
-#include <ros/ros.h>
-#include <tf/LinearMath/Quaternion.h> // to Quaternion_to_euler
-#include <tf/LinearMath/Matrix3x3.h>  // to Quaternion_to_euler
-#include <tf/transform_datatypes.h>   // createQuaternionFromRPY
+#include <tf2/LinearMath/Quaternion.h> // to Quaternion_to_euler
+#include <tf2/LinearMath/Matrix3x3.h>  // to Quaternion_to_euler
+#include <tf2/transform_datatypes.h>   // createQuaternionFromRPY
 #include <tf_conversions/tf_eigen.h>  // tf <-> eigen
-#include <geometry_msgs/PoseStamped.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <nav_msgs/Odometry.h>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 ///// PCL
 #include <pcl/point_types.h>                 //pt
 #include <pcl/point_cloud.h>                 //cloud
@@ -57,7 +54,7 @@ inline Eigen::Matrix4d gtsamPoseToPoseEig(const gtsam::Pose3 &gtsam_pose_in)
     return pose_eig_out;
 }
 
-inline geometry_msgs::PoseStamped poseEigToPoseStamped(const Eigen::Matrix4d &pose_eig_in,
+inline geometry_msgs::msg::PoseStamped poseEigToPoseStamped(const Eigen::Matrix4d &pose_eig_in,
                                                        std::string frame_id = "map")
 {
     double r, p, y;
@@ -65,7 +62,7 @@ inline geometry_msgs::PoseStamped poseEigToPoseStamped(const Eigen::Matrix4d &po
     tf::matrixEigenToTF(pose_eig_in.block<3, 3>(0, 0), mat);
     mat.getRPY(r, p, y);
     tf::Quaternion quat = tf::createQuaternionFromRPY(r, p, y);
-    geometry_msgs::PoseStamped pose;
+    geometry_msgs::msg::PoseStamped pose;
     pose.header.frame_id = frame_id;
     pose.pose.position.x = pose_eig_in(0, 3);
     pose.pose.position.y = pose_eig_in(1, 3);
@@ -77,13 +74,13 @@ inline geometry_msgs::PoseStamped poseEigToPoseStamped(const Eigen::Matrix4d &po
     return pose;
 }
 
-inline geometry_msgs::PoseStamped gtsamPoseToPoseStamped(const gtsam::Pose3 &gtsam_pose_in,
+inline geometry_msgs::msg::PoseStamped gtsamPoseToPoseStamped(const gtsam::Pose3 &gtsam_pose_in,
                                                          std::string frame_id = "map")
 {
     tf::Quaternion quat = tf::createQuaternionFromRPY(gtsam_pose_in.rotation().roll(),
                                                       gtsam_pose_in.rotation().pitch(),
                                                       gtsam_pose_in.rotation().yaw());
-    geometry_msgs::PoseStamped pose;
+    geometry_msgs::msg::PoseStamped pose;
     pose.header.frame_id = frame_id;
     pose.pose.position.x = gtsam_pose_in.translation().x();
     pose.pose.position.y = gtsam_pose_in.translation().y();
@@ -104,7 +101,7 @@ inline tf::Transform poseEigToROSTf(const Eigen::Matrix4d &pose)
     return transform;
 }
 
-inline tf::Transform poseStampedToROSTf(const geometry_msgs::PoseStamped &pose)
+inline tf::Transform poseStampedToROSTf(const geometry_msgs::msg::PoseStamped &pose)
 {
     tf::Transform transform;
     transform.setOrigin(tf::Vector3(pose.pose.position.x,
@@ -118,10 +115,10 @@ inline tf::Transform poseStampedToROSTf(const geometry_msgs::PoseStamped &pose)
 }
 
 template<typename T>
-inline sensor_msgs::PointCloud2 pclToPclRos(pcl::PointCloud<T> cloud,
+inline sensor_msgs::msg::PointCloud2 pclToPclRos(pcl::PointCloud<T> cloud,
                                             std::string frame_id = "map")
 {
-    sensor_msgs::PointCloud2 cloud_ROS;
+    sensor_msgs::msg::PointCloud2 cloud_ROS;
     pcl::toROSMsg(cloud, cloud_ROS);
     cloud_ROS.header.frame_id = frame_id;
     return cloud_ROS;
@@ -167,5 +164,3 @@ inline pcl::PointCloud<pcl::PointXYZI>::Ptr voxelizePcd(const pcl::PointCloud<pc
     voxelgrid.filter(*pcd_out);
     return pcd_out;
 }
-
-#endif

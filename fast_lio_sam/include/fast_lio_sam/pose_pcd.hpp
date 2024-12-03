@@ -1,6 +1,4 @@
-#ifndef FAST_LIO_SAM_POSE_PCD_HPP
-#define FAST_LIO_SAM_POSE_PCD_HPP
-
+#pragma once
 ///// coded headers
 #include "utilities.hpp"
 
@@ -13,13 +11,13 @@ struct PosePcd
     int idx_;
     bool processed_ = false;
     PosePcd() {}
-    PosePcd(const nav_msgs::Odometry &odom_in,
-            const sensor_msgs::PointCloud2 &pcd_in,
+    PosePcd(const nav_msgs::msg::Odometry &odom_in,
+            const sensor_msgs::msg::PointCloud2 &pcd_in,
             const int &idx_in);
 };
 
-inline PosePcd::PosePcd(const nav_msgs::Odometry &odom_in,
-                        const sensor_msgs::PointCloud2 &pcd_in,
+inline PosePcd::PosePcd(const nav_msgs::msg::Odometry &odom_in,
+                        const sensor_msgs::msg::PointCloud2 &pcd_in,
                         const int &idx_in)
 {
     tf::Quaternion q(odom_in.pose.pose.orientation.x,
@@ -41,6 +39,3 @@ inline PosePcd::PosePcd(const nav_msgs::Odometry &odom_in,
     timestamp_ = odom_in.header.stamp.toSec();
     idx_ = idx_in;
 }
-
-
-#endif // FAST_LIO_SAM_POSE_PCD_HPP

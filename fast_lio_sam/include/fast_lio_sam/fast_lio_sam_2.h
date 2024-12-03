@@ -49,6 +49,8 @@ public:
     void visTimerCallback();
 
 private:
+    LoopClosureConfig lc_config_;
+
     std::string map_frame_;
     std::string package_path_;
     std::string seq_name_;
@@ -80,6 +82,8 @@ private:
     
     double keyframe_thr_;
     double voxel_res_;
+    double loop_update_hz_;
+    double vis_hz_;
     // tf::TransformBroadcaster broadcaster_;
     
     pcl::PointCloud<pcl::PointXYZ> odoms_, corrected_odoms_;
