@@ -1,24 +1,25 @@
 fast_lio_sam_node:
-  basic:
-    map_frame: "map"
-    loop_update_hz: 2.0
-    vis_hz: 1.0
-  
-  keyframe:
-    keyframe_threshold: 1.5
-    num_submap_keyframes: 5
+  ros__parameters:
+    basic:
+      map_frame: "map"
+      loop_update_hz: 2.0
+      vis_hz: 1.0
+    
+    keyframe:
+      keyframe_threshold: 1.5
+      num_submap_keyframes: 5
 
-  loop:
-    loop_detection_radius: 35.0
-    loop_detection_timmediff_threshold: 30.0
+    loop:
+      loop_detection_radius: 35.0
+      loop_detection_timmediff_threshold: 30.0
 
-  icp:
-    icp_voxel_resolution: 0.3
-    icp_score_threshold: 1.5
-  
-  result:
-    save_voxel_resolution: 0.3
-    save_map_pcd: true
-    save_map_bag: true
-    save_in_kitti_format: true
-    seq_name: "sequence"
+    icp:
+      icp_voxel_resolution: 0.3
+      icp_score_threshold: 1.5
+    
+    result:
+      save_voxel_resolution: 0.3
+      save_map_pcd: true
+      save_map_bag: true
+      save_in_kitti_format: true
+      seq_name: "sequence"
