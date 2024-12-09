@@ -38,7 +38,7 @@ def launch_setup(context, *args, **kwargs):
         package="fast_lio_sam",
         executable="fast_lio_sam_node",
         name="fast_lio_sam_node",
-        parameters=fast_lio_sam_params,
+        parameters=[fast_lio_sam_params],
         output="screen"
     )
 
