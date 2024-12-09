@@ -1,17 +1,22 @@
-#include "fast_lio_sam.h"
+#include "fast_lio_sam/fast_lio_sam_2.h"
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "fast_lio_sam_node");
-    ros::NodeHandle nh_private("~");
+    // Initialize ROS2
+    rclcpp::init(argc, argv);
 
-    FastLioSam fast_lio_sam_(nh_private);
+    // Create a shared pointer for the node
+    auto node = std::make_shared<FastLioSam>();
 
-    ros::AsyncSpinner spinner(4); // Use multi threads
-    spinner.start();
-    ros::waitForShutdown();
+    // Create a MultiThreadedExecutor for multithreaded spinning
+    rclcpp::executors::MultiThreadedExecutor executor;
+    executor.add_node(node);
 
-    fast_lio_sam_.~FastLioSam(); // Explicit call of destructor
+    // Spin the node until shutdown
+    executor.spin();
+
+    // Shutdown ROS2
+    rclcpp::shutdown();
 
     return 0;
 }

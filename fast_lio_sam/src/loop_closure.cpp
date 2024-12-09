@@ -1,4 +1,4 @@
-#include "loop_closure.h"
+#include "fast_lio_sam/loop_closure.h"
 
 LoopClosure::LoopClosure(const LoopClosureConfig &config)
 {
