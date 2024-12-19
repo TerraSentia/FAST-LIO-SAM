@@ -40,6 +40,8 @@
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "visualization_msgs/msg/marker.hpp"
 
+#include "tf2_ros/transform_broadcaster.h"
+
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <message_filters/sync_policies/exact_time.h>
@@ -63,6 +65,7 @@ public:
 
     void loopTimerCallback();
     void visTimerCallback();
+    geometry_msgs::msg::TransformStamped getTransformStamped(const tf2::Transform &transform, const std::string &frame_id, const std::string &child_frame_id);
 
 private:
     LoopClosureConfig lc_config_;
@@ -101,7 +104,6 @@ private:
     double voxel_res_;
     double loop_update_hz_;
     double vis_hz_;
-    // tf::TransformBroadcaster broadcaster_;
     
     pcl::PointCloud<pcl::PointXYZ> odoms_, corrected_odoms_;
     
@@ -122,6 +124,8 @@ private:
     std::unique_ptr<message_filters::Subscriber<nav_msgs::msg::Odometry>> odom_sub_;
     std::unique_ptr<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>> pcd_sub_;
     std::unique_ptr<message_filters::Synchronizer<odom_pcd_sync_pol>> sub_odom_pcd_sync_;
+
+    std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
     // not so important for now
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr sub_save_flag_;

@@ -95,6 +95,29 @@ inline geometry_msgs::msg::PoseStamped gtsamPoseToPoseStamped(const gtsam::Pose3
     return pose;
 }
 
+inline tf2::Transform poseEigToROSTf2(const Eigen::Matrix4d &pose)
+{
+    Eigen::Quaterniond quat(pose.block<3, 3>(0, 0));
+    tf2::Transform transform;
+    transform.setOrigin(tf2::Vector3(pose(0, 3), pose(1, 3), pose(2, 3)));
+    transform.setRotation(tf2::Quaternion(quat.x(), quat.y(), quat.z(), quat.w()));
+    return transform;
+}
+
+inline tf2::Transform poseStampedToROSTf2(const geometry_msgs::msg::PoseStamped &pose)
+{
+    tf2::Transform transform;
+    transform.setOrigin(tf2::Vector3(pose.pose.position.x,
+                                     pose.pose.position.y,
+                                     pose.pose.position.z));
+    transform.setRotation(tf2::Quaternion(pose.pose.orientation.x,
+                                          pose.pose.orientation.y,
+                                          pose.pose.orientation.z,
+                                          pose.pose.orientation.w));
+    return transform;
+}
+
+
 template <typename T>
 inline sensor_msgs::msg::PointCloud2 pclToPclRos(pcl::PointCloud<T> cloud,
                                                  const std::string &frame_id = "map")
