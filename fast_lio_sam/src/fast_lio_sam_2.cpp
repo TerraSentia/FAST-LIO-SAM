@@ -109,6 +109,8 @@ void FastLioSam::loadParams()
     this->get_parameter("result.save_map_bag", save_map_bag_);
     this->get_parameter("result.save_in_kitti_format", save_in_kitti_format_);
     this->get_parameter("result.seq_name", seq_name_);
+
+    tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 }
 
 void FastLioSam::initPublishers()
@@ -142,12 +144,37 @@ void FastLioSam::initTimers()
     vis_timer_ = this->create_wall_timer(500ms, std::bind(&FastLioSam::visTimerCallback, this));
 }
 
+geometry_msgs::msg::TransformStamped FastLioSam::getTransformStamped(const tf2::Transform &transform, const std::string &frame_id, const std::string &child_frame_id)
+{
+    geometry_msgs::msg::TransformStamped transform_stamped;
+
+    // Populate the TransformStamped message
+    transform_stamped.header.stamp = this->get_clock()->now();
+    transform_stamped.header.frame_id = frame_id;
+    transform_stamped.child_frame_id = child_frame_id;
+
+    transform_stamped.transform.translation.x = transform.getOrigin().x();
+    transform_stamped.transform.translation.y = transform.getOrigin().y();
+    transform_stamped.transform.translation.z = transform.getOrigin().z();
+
+    tf2::Quaternion quat = transform.getRotation();
+    transform_stamped.transform.rotation.x = quat.x();
+    transform_stamped.transform.rotation.y = quat.y();
+    transform_stamped.transform.rotation.z = quat.z();
+    transform_stamped.transform.rotation.w = quat.w();
+
+    return transform_stamped;
+
+}
+
 void FastLioSam::odomPcdCallback(const nav_msgs::msg::Odometry::ConstSharedPtr &odom_msg, const sensor_msgs::msg::PointCloud2::ConstSharedPtr &pcd_msg)
 {
     Eigen::Matrix4d last_odom_tf;
     last_odom_tf = current_frame_.pose_eig_;
     current_frame_ = PosePcd(*odom_msg, *pcd_msg, current_keyframe_idx_);
     auto t1 = this->get_clock()->now();
+    geometry_msgs::msg::TransformStamped transform_stamped;
+    tf2::Transform transform;
 
     {
         std::lock_guard<std::mutex> lock(realtime_pose_mutex_);
@@ -155,6 +182,9 @@ void FastLioSam::odomPcdCallback(const nav_msgs::msg::Odometry::ConstSharedPtr &
         current_frame_.pose_corrected_eig_ = last_corrected_pose_ * odom_delta_;
         realtime_pose_pub_->publish(poseEigToPoseStamped(current_frame_.pose_corrected_eig_, map_frame_));
         // broadcaster
+        transform = poseEigToROSTf2(current_frame_.pose_corrected_eig_);
+        transform_stamped = getTransformStamped(transform, map_frame_, "robot");
+        tf_broadcaster_->sendTransform(transform_stamped);
     }
     corrected_current_pcd_pub_->publish(pclToPclRos(transformPcd(current_frame_.pcd_, current_frame_.pose_corrected_eig_), map_frame_));
 
