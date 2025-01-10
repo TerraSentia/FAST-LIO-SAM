@@ -130,7 +130,7 @@ void FastLioSam::initPublishers()
 
 void FastLioSam::initSubscribers()
 {
-    odom_sub_ = std::make_unique<message_filters::Subscriber<nav_msgs::msg::Odometry>>(this, "odometry");
+    odom_sub_ = std::make_unique<message_filters::Subscriber<nav_msgs::msg::Odometry>>(this, "Odometry");
     pcd_sub_ = std::make_unique<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>>(this, "cloud_registered");
     sub_odom_pcd_sync_ = std::make_unique<message_filters::Synchronizer<odom_pcd_sync_pol>>(odom_pcd_sync_pol(10),*odom_sub_, *pcd_sub_);
     sub_odom_pcd_sync_->registerCallback(std::bind(&FastLioSam::odomPcdCallback, this, _1, _2));
@@ -169,12 +169,14 @@ geometry_msgs::msg::TransformStamped FastLioSam::getTransformStamped(const tf2::
 
 void FastLioSam::odomPcdCallback(const nav_msgs::msg::Odometry::ConstSharedPtr &odom_msg, const sensor_msgs::msg::PointCloud2::ConstSharedPtr &pcd_msg)
 {
+    RCLCPP_INFO(this->get_logger(), "odomcb 1");
     Eigen::Matrix4d last_odom_tf;
     last_odom_tf = current_frame_.pose_eig_;
     current_frame_ = PosePcd(*odom_msg, *pcd_msg, current_keyframe_idx_);
     auto t1 = this->get_clock()->now();
     geometry_msgs::msg::TransformStamped transform_stamped;
     tf2::Transform transform;
+    RCLCPP_INFO(this->get_logger(), "odom cb 2");
 
     {
         std::lock_guard<std::mutex> lock(realtime_pose_mutex_);
@@ -185,11 +187,13 @@ void FastLioSam::odomPcdCallback(const nav_msgs::msg::Odometry::ConstSharedPtr &
         transform = poseEigToROSTf2(current_frame_.pose_corrected_eig_);
         transform_stamped = getTransformStamped(transform, map_frame_, "robot");
         tf_broadcaster_->sendTransform(transform_stamped);
+        RCLCPP_INFO(this->get_logger(), "odom cb 3");
     }
     corrected_current_pcd_pub_->publish(pclToPclRos(transformPcd(current_frame_.pcd_, current_frame_.pose_corrected_eig_), map_frame_));
 
     if (!is_initialized_)
     {
+        RCLCPP_INFO(this->get_logger(), "odom cb 4");
         keyframes_.push_back(current_frame_);
         updateOdomsAndPaths(current_frame_);
         auto variance_vector = (gtsam::Vector(6) << 1e-4, 1e-4, 1e-4, 1e-2, 1e-2, 1e-2).finished(); // rad*rad,
@@ -199,23 +203,28 @@ void FastLioSam::odomPcdCallback(const nav_msgs::msg::Odometry::ConstSharedPtr &
         init_esti_.insert(current_keyframe_idx_, poseEigToGtsamPose(current_frame_.pose_eig_));
         current_keyframe_idx_++;
         is_initialized_ = true;
+        RCLCPP_INFO(this->get_logger(), "odom cb 5");
     }
     else
     {
         //// 2. check if keyframe
         auto t2 = this->get_clock()->now();
+        RCLCPP_INFO(this->get_logger(), "odom cb 6");
         if (checkIfKeyframe(current_frame_, keyframes_.back()))
         {
+            RCLCPP_INFO(this->get_logger(), "odom cb 7");
             // 2-2. if so, save
             {
                 std::lock_guard<std::mutex> lock(keyframes_mutex_);
                 keyframes_.push_back(current_frame_);
+                RCLCPP_INFO(this->get_logger(), "odom cb 8");
             }
             // 2-3. if so, add to graph
             auto variance_vector = (gtsam::Vector(6) << 1e-4, 1e-4, 1e-4, 1e-2, 1e-2, 1e-2).finished();
             gtsam::noiseModel::Diagonal::shared_ptr odom_noise = gtsam::noiseModel::Diagonal::Variances(variance_vector);
             gtsam::Pose3 pose_from = poseEigToGtsamPose(keyframes_[current_keyframe_idx_ - 1].pose_corrected_eig_);
             gtsam::Pose3 pose_to = poseEigToGtsamPose(current_frame_.pose_corrected_eig_);
+            RCLCPP_INFO(this->get_logger(), "odom cb 9");
             {
                 std::lock_guard<std::mutex> lock(graph_mutex_);
                 gtsam_graph_.add(gtsam::BetweenFactor<gtsam::Pose3>(current_keyframe_idx_ - 1,
@@ -225,18 +234,21 @@ void FastLioSam::odomPcdCallback(const nav_msgs::msg::Odometry::ConstSharedPtr &
                 init_esti_.insert(current_keyframe_idx_, pose_to);
             }
             current_keyframe_idx_++;
+            RCLCPP_INFO(this->get_logger(), "odom cb 10");
 
             //// 3. vis
             auto t3 = this->get_clock()->now();
             {
                 std::lock_guard<std::mutex> lock(vis_mutex_);
                 updateOdomsAndPaths(current_frame_);
+                RCLCPP_INFO(this->get_logger(), "odom cb 11");
             }
 
             //// 4. optimize with graph
             auto t4 = this->get_clock()->now();
             // m_corrected_esti = gtsam::LevenbergMarquardtOptimizer(m_gtsam_graph, init_esti_).optimize(); // cf. isam.update vs values.LM.optimize
             {
+                RCLCPP_INFO(this->get_logger(), "odom cb 12");
                 std::lock_guard<std::mutex> lock(graph_mutex_);
                 isam_handler_->update(gtsam_graph_, init_esti_);
                 isam_handler_->update();
@@ -254,6 +266,7 @@ void FastLioSam::odomPcdCallback(const nav_msgs::msg::Odometry::ConstSharedPtr &
             // get corrected poses and reset odom delta (for realtime pose pub)
             auto t5 = this->get_clock()->now();
             {
+                RCLCPP_INFO(this->get_logger(), "odom cb 13");
                 std::lock_guard<std::mutex> lock(realtime_pose_mutex_);
                 corrected_esti_ = isam_handler_->calculateEstimate();
                 last_corrected_pose_ = gtsamPoseToPoseEig(corrected_esti_.at<gtsam::Pose3>(corrected_esti_.size() - 1));
@@ -262,22 +275,31 @@ void FastLioSam::odomPcdCallback(const nav_msgs::msg::Odometry::ConstSharedPtr &
             // correct poses in keyframes
             if (loop_added_flag_)
             {
+                RCLCPP_INFO(this->get_logger(), "odom cb 14");
                 std::lock_guard<std::mutex> lock(keyframes_mutex_);
                 for (size_t i = 0; i < corrected_esti_.size(); ++i)
                 {
                     keyframes_[i].pose_corrected_eig_ = gtsamPoseToPoseEig(corrected_esti_.at<gtsam::Pose3>(i));
                 }
                 loop_added_flag_ = false;
+                RCLCPP_INFO(this->get_logger(), "odom cb 15");
             }
             auto t6 = this->get_clock()->now();
 
-            RCLCPP_INFO(this->get_logger(), "real: %.1f, key_add: %.1f, vis: %.1f, opt: %.1f, res: %.1f, tot: %.1fms",
-                    (t2 - t1).seconds(),
-                    (t3 - t2).seconds(),
-                    (t4 - t3).seconds(),
-                    (t5 - t4).seconds(),
-                    (t6 - t5).seconds(),
-                    (t6 - t1).seconds());
+            auto diff_2_1 = t2 - t1;
+            auto diff_3_2 = t3 - t2;
+            auto diff_4_3 = t4 - t3;
+            auto diff_5_4 = t5 - t4;
+            auto diff_6_5 = t6 - t5;
+            auto diff_6_1 = t6 - t1;
+
+            RCLCPP_INFO(this->get_logger(), "real: %f, key_add: %f, vis: %f, opt: %f, res: %f, tot: %f",
+                    diff_2_1.seconds(),
+                    diff_3_2.seconds(),
+                    diff_4_3.seconds(),
+                    diff_5_4.seconds(),
+                    diff_6_5.seconds(),
+                    diff_6_1.seconds());
         }
     }
     return;
@@ -285,9 +307,12 @@ void FastLioSam::odomPcdCallback(const nav_msgs::msg::Odometry::ConstSharedPtr &
 
 void FastLioSam::loopTimerCallback()
 {
+    loop_closure_.reset(new LoopClosure(lc_config_));
+    RCLCPP_INFO(this->get_logger(), "loop timer 1");
     auto &latest_keyframe = keyframes_.back();
     if (!is_initialized_ || keyframes_.empty() || latest_keyframe.processed_) { return; }
     latest_keyframe.processed_ = true;
+    RCLCPP_INFO(this->get_logger(), "loop timer 2");
 
     auto t1 = this->get_clock()->now();
     const int closest_keyframe_idx = loop_closure_->fetchClosestKeyframeIdx(latest_keyframe, keyframes_);
@@ -295,11 +320,12 @@ void FastLioSam::loopTimerCallback()
     {
         return;
     }
-
+    RCLCPP_INFO(this->get_logger(), "loop timer 3");
     const RegistrationOutput &reg_output = loop_closure_->performLoopClosure(latest_keyframe, keyframes_, closest_keyframe_idx);
     if (reg_output.is_valid_)
     {
         RCLCPP_INFO(this->get_logger(), "\033[1;32mLoop closure accepted. Score: %.3f\033[0m", reg_output.score_);
+        RCLCPP_INFO(this->get_logger(), "after acceptance");
         const auto &score = reg_output.score_;
         gtsam::Pose3 pose_from = poseEigToGtsamPose(reg_output.pose_between_eig_ * latest_keyframe.pose_corrected_eig_); // IMPORTANT: take care of the order
         gtsam::Pose3 pose_to = poseEigToGtsamPose(keyframes_[closest_keyframe_idx].pose_corrected_eig_);
@@ -307,6 +333,7 @@ void FastLioSam::loopTimerCallback()
         gtsam::noiseModel::Diagonal::shared_ptr loop_noise = gtsam::noiseModel::Diagonal::Variances(variance_vector);
         {
             std::lock_guard<std::mutex> lock(graph_mutex_);
+            RCLCPP_INFO(this->get_logger(), "graph mutex");
             gtsam_graph_.add(gtsam::BetweenFactor<gtsam::Pose3>(latest_keyframe.idx_,
                                                                 closest_keyframe_idx,
                                                                 pose_from.between(pose_to),
@@ -315,27 +342,31 @@ void FastLioSam::loopTimerCallback()
         loop_idx_pairs_.push_back({latest_keyframe.idx_, closest_keyframe_idx}); // for vis
         loop_added_flag_vis_ = true;
         loop_added_flag_ = true;
+        RCLCPP_INFO(this->get_logger(), "all bools true");
     }
     else
     {
-        RCLCPP_WARN(this->get_logger(), "Loop closure rejected. Score: %.3f", reg_output.score_);
+        RCLCPP_WARN(this->get_logger(), "Loop closure rejected. Score: %f", reg_output.score_);
     }
     auto t2 = this->get_clock()->now();
+
 
     debug_src_pub_->publish(pclToPclRos(loop_closure_->getSourceCloud(), map_frame_));
     debug_dst_pub_->publish(pclToPclRos(loop_closure_->getTargetCloud(), map_frame_));
     debug_fine_aligned_pub_->publish(pclToPclRos(loop_closure_->getFinalAlignedCloud(), map_frame_));
 
-    RCLCPP_INFO(this->get_logger(), "loop: %.1f", (t2 - t1).seconds());
+    RCLCPP_INFO(this->get_logger(), "loop: %f", (t2 - t1).seconds());
     return;
 }
 
 void FastLioSam::visTimerCallback()
 {
+    // RCLCPP_INFO(this->get_logger(), "vis timer 1");
     if (!is_initialized_)
     {
         return;
     }
+    // RCLCPP_INFO(this->get_logger(), "vis_timer 2");
 
     auto tv1 = this->get_clock()->now();
     //// 1. if loop closed, correct vis data
@@ -363,19 +394,23 @@ void FastLioSam::visTimerCallback()
         }
         // update with corrected data
         {
+            RCLCPP_INFO(this->get_logger(), "vis timer before corrected data");
             std::lock_guard<std::mutex> lock(vis_mutex_);
             corrected_odoms_ = corrected_odoms;
             corrected_path_.poses = corrected_path.poses;
+            RCLCPP_INFO(this->get_logger(), "vis timer after corrected data");
         }
         loop_added_flag_vis_ = false;
     }
     //// 2. publish odoms, paths
     {
+        // RCLCPP_INFO(this->get_logger(), "vis timer for publishing");
         std::lock_guard<std::mutex> lock(vis_mutex_);
         odom_pub_->publish(pclToPclRos(odoms_, map_frame_));
         path_pub_->publish(odom_path_);
         corrected_odom_pub_->publish(pclToPclRos(corrected_odoms_, map_frame_));
         corrected_path_pub_->publish(corrected_path_);
+        // RCLCPP_INFO(this->get_logger(), "vis timer published");
     }
 
     //// 3. global map
@@ -399,7 +434,7 @@ void FastLioSam::visTimerCallback()
         global_map_vis_switch_ = true;
     }
     auto tv2 = this->get_clock()->now();
-    RCLCPP_INFO(this->get_logger(), "vis: %.1fms", (tv2 - tv1).seconds());
+    RCLCPP_INFO(this->get_logger(), "vis: %f", (tv2 - tv1).seconds());
     return;
 }
 
@@ -545,5 +580,8 @@ void FastLioSam::updateOdomsAndPaths(const PosePcd &pose_pcd_in)
 
 bool FastLioSam::checkIfKeyframe(const PosePcd &pose_pcd_in, const PosePcd &latest_pose_pcd)
 {
-    return keyframe_thr_ < (latest_pose_pcd.pose_corrected_eig_.block<3, 1>(0, 3) - pose_pcd_in.pose_corrected_eig_.block<3, 1>(0, 3)).norm();
+    RCLCPP_INFO(this->get_logger(), "checkifkeyframe");
+    bool result = keyframe_thr_ < (latest_pose_pcd.pose_corrected_eig_.block<3, 1>(0, 3) - pose_pcd_in.pose_corrected_eig_.block<3, 1>(0, 3)).norm();
+    RCLCPP_INFO(this->get_logger(), "result: %d", result);
+    return result;
 }
