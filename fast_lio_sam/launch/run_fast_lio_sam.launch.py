@@ -6,7 +6,7 @@ import yaml
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import OpaqueFunction
+from launch.actions import OpaqueFunction, DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
@@ -25,6 +25,9 @@ def launch_setup(context, *args, **kwargs):
     config_path_value = config_path.perform(context)
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
 
+    default_rviz_config_path = os.path.join(
+        config_path_value, 'rviz', 'sam_rviz.rviz')
+
     params_file = os.path.join(
         config_path_value,
         "config_2.yaml"
@@ -42,8 +45,15 @@ def launch_setup(context, *args, **kwargs):
         output="screen"
     )
 
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        arguments=['-d', default_rviz_config_path],
+    )
+
     return[
-        fast_lio_sam_node
+        fast_lio_sam_node, 
+        rviz_node
     ]
 
 def generate_launch_description():
