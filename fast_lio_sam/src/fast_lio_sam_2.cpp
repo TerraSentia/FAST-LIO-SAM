@@ -125,6 +125,7 @@ void FastLioSam::initPublishers()
     realtime_pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("pose_stamped", 10);
     path_pub_ = this->create_publisher<nav_msgs::msg::Path>("ori_path", 10);
     corrected_path_pub_ = this->create_publisher<nav_msgs::msg::Path>("corrected_path", 10);
+    loop_detection_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("loop_detection", 10);
     
 }
 

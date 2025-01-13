@@ -26,7 +26,7 @@ def launch_setup(context, *args, **kwargs):
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
 
     default_rviz_config_path = os.path.join(
-        config_path_value, 'rviz', 'sam_rviz.rviz')
+        config_path_value, 'sam_rviz.rviz')
 
     params_file = os.path.join(
         config_path_value,
