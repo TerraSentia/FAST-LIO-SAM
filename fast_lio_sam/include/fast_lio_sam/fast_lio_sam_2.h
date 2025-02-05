@@ -33,6 +33,7 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/ISAM2.h>
 
+#include "yaml-cpp/yaml.h"
 #include "std_msgs/msg/string.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "nav_msgs/msg/odometry.hpp"
@@ -73,6 +74,8 @@ private:
     std::string map_frame_;
     std::string package_path_;
     std::string seq_name_;
+    std::string yaml_file_name_;
+    std::string yaml_file_name_bkp_;
 
     std::mutex realtime_pose_mutex_, keyframes_mutex_, graph_mutex_, vis_mutex_;
 
@@ -91,7 +94,9 @@ private:
     bool loop_added_flag_ = false;
     bool loop_added_flag_vis_ = false;
     bool global_map_vis_switch_ = true;
-    bool save_map_bag_ = false, save_map_pcd_ = false, save_in_kitti_format_ = false;
+    bool save_map_bag_ = false, save_map_pcd_ = false, save_in_kitti_format_ = false, save_pose_yml_ = false;
+    int bkp_dt_;
+    int pose_update_count_ = 0;
 
     std::shared_ptr<gtsam::ISAM2> isam_handler_ = nullptr;
     std::shared_ptr<LoopClosure> loop_closure_ = nullptr;
@@ -139,6 +144,7 @@ private:
     visualization_msgs::msg::Marker getLoopMarkers(const gtsam::Values &corrected_esti_in);
     void odomPcdCallback(const nav_msgs::msg::Odometry::ConstSharedPtr &odom_msg, const sensor_msgs::msg::PointCloud2::ConstSharedPtr &pcd_msg);
     void saveFlagCallback(const std_msgs::msg::String::SharedPtr msg);
+    void savePoseToYaml(const geometry_msgs::msg::PoseStamped::ConstSharedPtr &pose_msg, const std::string& filename);
     
     
     

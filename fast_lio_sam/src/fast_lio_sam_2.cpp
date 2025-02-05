@@ -2,7 +2,7 @@
 
 using namespace std::placeholders;
 using namespace std::chrono_literals;
-
+// using namespace fs = std::filesystem;
 bool DEBUG = false;
 
 FastLioSam::FastLioSam() : Node("fast_lio_sam_node")
@@ -16,7 +16,7 @@ FastLioSam::FastLioSam() : Node("fast_lio_sam_node")
     initSubscribers();
 
     initTimers();
-
+    pose_update_count_ = 0;
     loop_closure_.reset(new LoopClosure(lc_config_));
 
     gtsam::ISAM2Params isam_params_;
@@ -29,7 +29,9 @@ FastLioSam::FastLioSam() : Node("fast_lio_sam_node")
 
     RCLCPP_INFO(this->get_logger(), "Main class, starting node..");
 
-
+    geometry_msgs::msg::PoseStamped fake_pose;
+    savePoseToYaml(std::make_shared<geometry_msgs::msg::PoseStamped>(fake_pose), yaml_file_name_);
+    savePoseToYaml(std::make_shared<geometry_msgs::msg::PoseStamped>(fake_pose), yaml_file_name_bkp_);
 }
 
 FastLioSam::~FastLioSam()
@@ -90,6 +92,10 @@ void FastLioSam::loadParams()
     this->declare_parameter("result.save_map_bag", false);
     this->declare_parameter("result.save_in_kitti_format", false);
     this->declare_parameter("result.seq_name", "");
+    this->declare_parameter("result.save_pose_yml", false);
+    this->declare_parameter("result.yaml_file_name", "");
+    this->declare_parameter("result.yaml_file_name_bkp", "");
+    this->declare_parameter("result.bkp_dt", 1);
 
 
     this->get_parameter("basic.map_frame", map_frame_);
@@ -111,6 +117,10 @@ void FastLioSam::loadParams()
     this->get_parameter("result.save_map_bag", save_map_bag_);
     this->get_parameter("result.save_in_kitti_format", save_in_kitti_format_);
     this->get_parameter("result.seq_name", seq_name_);
+    this->get_parameter("result.save_pose_yml", save_pose_yml_);
+    this->get_parameter("result.yaml_file_name", yaml_file_name_);
+    this->get_parameter("result.yaml_file_name_bkp", yaml_file_name_bkp_);
+    this->get_parameter("result.bkp_dt", bkp_dt_);
 
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 }
@@ -170,6 +180,67 @@ geometry_msgs::msg::TransformStamped FastLioSam::getTransformStamped(const tf2::
 
 }
 
+void FastLioSam::savePoseToYaml(const geometry_msgs::msg::PoseStamped::ConstSharedPtr &pose_msg, const std::string& filename){
+    try{
+        YAML::Emitter yaml_emitter;
+        yaml_emitter << YAML::BeginMap;
+        
+            yaml_emitter << YAML::Key << "header";
+            yaml_emitter << YAML::Value << YAML::BeginMap;
+                yaml_emitter << YAML::Key << "frame_id";
+                yaml_emitter << YAML::Value << pose_msg->header.frame_id;
+                yaml_emitter << YAML::Key << "timestamp";
+                std::stringstream ss;
+                ss << pose_msg->header.stamp.sec << "." << std::setw(9) << std::setfill('0') << pose_msg->header.stamp.nanosec;
+                std::string timestamp = ss.str();
+                yaml_emitter << YAML::Value << timestamp;
+            yaml_emitter << YAML::EndMap;
+            yaml_emitter << YAML::Key << "pose";
+            yaml_emitter << YAML::Value << YAML::BeginMap;
+                yaml_emitter << YAML::Key << "position" << YAML::Value << YAML::BeginMap;
+                    yaml_emitter << YAML::Key << "x" << YAML::Value << pose_msg->pose.position.x;
+                    yaml_emitter << YAML::Key << "y" << YAML::Value << pose_msg->pose.position.y;
+                    yaml_emitter << YAML::Key << "z" << YAML::Value << pose_msg->pose.position.z;
+                yaml_emitter << YAML::EndMap;
+                yaml_emitter << YAML::Key << "orientation" << YAML::Value << YAML::BeginMap;
+                    yaml_emitter << YAML::Key << "x" << YAML::Value << pose_msg->pose.orientation.x;
+                    yaml_emitter << YAML::Key << "y" << YAML::Value << pose_msg->pose.orientation.y;
+                    yaml_emitter << YAML::Key << "z" << YAML::Value << pose_msg->pose.orientation.z;
+                    yaml_emitter << YAML::Key << "w" << YAML::Value << pose_msg->pose.orientation.w;
+                yaml_emitter << YAML::EndMap; 
+            yaml_emitter << YAML::EndMap;
+
+        yaml_emitter << YAML::EndMap;
+
+        // // Get the current directory
+        // std::filesystem::path current_path = std::filesystem::current_path();
+
+        // // Move one directory up
+        // std::filesystem::path parent_path = current_path.parent_path();
+
+        // // Enter the "config" directory
+        std::filesystem::path config_path = "/root/ros2_ws/install/fast_lio_sam/share/fast_lio_sam/config";
+        
+        // Ensure the directory exists
+        if (!std::filesystem::exists(config_path)) {
+            RCLCPP_ERROR(this->get_logger(), "Error: Config directory does not exist: %s", config_path.string().c_str());
+            return;
+        }
+        RCLCPP_INFO(this->get_logger(), "Config directory found at: %s", config_path.string().c_str());
+        RCLCPP_INFO(this->get_logger(), "YAML file name: %s", filename.c_str());
+        std::filesystem::path yaml_absolute_path = config_path/filename;
+        // std::filesystem::path yaml_absolute_path = /root/ros2_ws/src/
+        std::ofstream fout(yaml_absolute_path);
+        fout << yaml_emitter.c_str();
+        fout.close();
+        std::cout << "YAML file saved to: " << yaml_absolute_path.c_str() << std::endl;
+    } catch (const std::exception& e){
+        RCLCPP_ERROR(this->get_logger(), "Exception: %s", e.what());
+        return;
+    }
+    
+}
+
 void FastLioSam::odomPcdCallback(const nav_msgs::msg::Odometry::ConstSharedPtr &odom_msg, const sensor_msgs::msg::PointCloud2::ConstSharedPtr &pcd_msg)
 {   
     if ( DEBUG ) { RCLCPP_INFO(this->get_logger(), "odomcb 1"); }
@@ -186,6 +257,14 @@ void FastLioSam::odomPcdCallback(const nav_msgs::msg::Odometry::ConstSharedPtr &
         std::lock_guard<std::mutex> lock(realtime_pose_mutex_);
         odom_delta_ = odom_delta_ * last_odom_tf.inverse() * current_frame_.pose_eig_;
         current_frame_.pose_corrected_eig_ = last_corrected_pose_ * odom_delta_;
+        if (save_pose_yml_) { 
+            savePoseToYaml(std::make_shared<geometry_msgs::msg::PoseStamped>(poseEigToPoseStamped(current_frame_.pose_corrected_eig_, map_frame_)), yaml_file_name_); 
+            if(pose_update_count_ % bkp_dt_ == 0){
+                savePoseToYaml(std::make_shared<geometry_msgs::msg::PoseStamped>(poseEigToPoseStamped(current_frame_.pose_corrected_eig_, map_frame_)), yaml_file_name_bkp_);
+            }
+            pose_update_count_++;
+
+        }
         realtime_pose_pub_->publish(poseEigToPoseStamped(current_frame_.pose_corrected_eig_, map_frame_));
         // broadcaster
         transform = poseEigToROSTf2(current_frame_.pose_corrected_eig_);
@@ -453,11 +532,11 @@ void FastLioSam::saveFlagCallback(const std_msgs::msg::String::SharedPtr msg)
     if (save_in_kitti_format_)
     {
         RCLCPP_INFO(this->get_logger(), "\033[32;1mScans are saved in %s, following the KITTI and TUM format\033[0m", scans_directory.c_str());
-        // if (fs::exists(seq_directory))
+        // if (std::filesystemexists(seq_directory))
         // {
-        //     fs::remove_all(seq_directory);
+        //     std::filesystemremove_all(seq_directory);
         // }
-        // fs::create_directories(scans_directory);
+        // std::filesystemcreate_directories(scans_directory);
 
         std::ofstream kitti_pose_file(seq_directory + "/poses_kitti.txt");
         std::ofstream tum_pose_file(seq_directory + "/poses_tum.txt");

@@ -22,6 +22,7 @@ find_package(PCL REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(pcl_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(yaml-cpp REQUIRED)
 find_package(GTSAM REQUIRED)
 
 if(PCL_FOUND)
@@ -40,6 +41,7 @@ include_directories(
   ${PCL_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
   ${GTSAM_INCLUDE_DIR}
+  ${YAML_CPP_INCLUDE_DIRS}
 )
 
 set(dependencies
@@ -60,11 +62,13 @@ set(dependencies
 
   GTSAM
   Eigen3
+  yaml-cpp
 )
 
 set(common_libraries
   ${PCL_LIBRARIES} 
-  ${EIGEN3_LIBS} 
+  ${EIGEN3_LIBS}
+  yaml-cpp::yaml-cpp 
   gtsam
 )
 
