@@ -5,9 +5,9 @@ This README provides details about running fast_lio_sam node and its other depen
 
 
 ## Dependencies
-Ubuntu 22.04
-ROS2 Humble
-Make sure that all the dependencies mentioned in the [README_ROS1.md](./README_ROS1.md) document have been installed on the system. 
+1. Ubuntu 22.04
+2. ROS2 Humble
+3. Make sure that all the dependencies mentioned in the [README_ROS1.md](./README_ROS1.md) document have been installed on the system. 
 
 ## How to run (Using Source Code)
 1. Open a terminal and navigate to the [workspace](./docker_suite_intel_x86_64_amd64/FAST-LIO-SAM) containing the `fast_lio_sam` package. 
