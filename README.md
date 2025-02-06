@@ -8,7 +8,7 @@ This README provides details about running fast_lio_sam node and its other depen
 Make sure that all the dependencies mentioned in the [README_ROS1.md](./README_ROS1.md) document have been installed on the system. 
 
 ## How to run (Using Source Code)
-1. Open a terminal and navigate to the [workspace](./docker_suite_intel_x86_64/FAST-LIO-SAM) containing the `fast_lio_sam` package. 
+1. Open a terminal and navigate to the [workspace](./docker_suite_intel_x86_64_amd64/FAST-LIO-SAM) containing the `fast_lio_sam` package. 
 2. Build the package using - `colcon build --packages-select fast_lio_sam fast_lio`, the fast_lio package should be present in the third_party directory of the repo. 
 3. Source the install space in the terminal - `source ./install/setup.bash`
 4. Run the command `ros2 launch fast_lio_sam run_lio_all.launch.py sam_rviz:=true lio_config_file:=avia.yaml sam_delay:=5`
