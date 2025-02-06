@@ -5,6 +5,8 @@ This README provides details about running fast_lio_sam node and its other depen
 
 
 ## Dependencies
+Ubuntu 22.04
+ROS2 Humble
 Make sure that all the dependencies mentioned in the [README_ROS1.md](./README_ROS1.md) document have been installed on the system. 
 
 ## How to run (Using Source Code)
