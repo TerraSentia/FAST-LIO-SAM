@@ -20,7 +20,7 @@ This README provides details about running fast_lio_sam node and its other depen
 
 ## How to run (Using Docker)
 1. Open a terminal and navigate to the directory `docker_suite_intel_x86_64_amd64`. 
-2. **Move [FAST-LIO-SAM](./FAST-LIO-SAM) into inside this `docker_suite_intel_x86_64_amd64` directory to bring it in context.** 
+2. **Move the source code [FAST-LIO-SAM](./FAST-LIO-SAM) into inside this `docker_suite_intel_x86_64_amd64` directory to bring it in context.** 
 3. Set docker permissions to not require sudo as follows (for convenience):
 4. ` sudo groupadd docker`
 5. ` sudo usermod -aG docker $USER`
