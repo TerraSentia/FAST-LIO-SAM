@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>fast_lio_sam</name>
+  <version>0.0.0</version>
+
+  <description>
+    This is a SLAM implementation combining FAST-LIO2 with pose graph optimization and loop closing based on LIO-SAM paper to learn GTSAM for myself
+  </description>
+  <author email="eungchang_mason@kaist.ac.kr">Eungchang Mason Lee</author>
+
+  <maintainer email="akshay.d@earthsense.co">Akshay</maintainer>
+
+  <license>BSD3</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>pcl_ros</depend>
+  <depend>message_filters</depend>
+  <depend>yaml-cpp</depend>
+  
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+
+</package>
