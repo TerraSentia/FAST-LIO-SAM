@@ -96,6 +96,7 @@ void FastLioSam::loadParams()
     this->declare_parameter("result.yaml_file_name", "");
     this->declare_parameter("result.yaml_file_name_bkp", "");
     this->declare_parameter("result.bkp_dt", 1);
+    this->declare_parameter("result.map_publish_freq", 10);
 
 
     this->get_parameter("basic.map_frame", map_frame_);
@@ -121,6 +122,7 @@ void FastLioSam::loadParams()
     this->get_parameter("result.yaml_file_name", yaml_file_name_);
     this->get_parameter("result.yaml_file_name_bkp", yaml_file_name_bkp_);
     this->get_parameter("result.bkp_dt", bkp_dt_);
+    this->get_parameter("result.map_publish_freq", map_publish_freq_);
 
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 }
@@ -493,11 +495,12 @@ void FastLioSam::visTimerCallback()
         path_pub_->publish(odom_path_);
         corrected_odom_pub_->publish(pclToPclRos(corrected_odoms_, map_frame_));
         corrected_path_pub_->publish(corrected_path_);
+        vis_count_++;
         if ( DEBUG ) { RCLCPP_INFO(this->get_logger(), "vis timer published"); }
     }
 
     //// 3. global map
-    if (global_map_vis_switch_ && corrected_pcd_map_pub_->get_subscription_count() > 0) // save time, only once
+    if (global_map_vis_switch_) // save time, only once in num_keyframes_per_map_publish keyframes
     {
         pcl::PointCloud<PointType>::Ptr corrected_map(new pcl::PointCloud<PointType>());
         corrected_map->reserve(keyframes_[0].pcd_.size() * keyframes_.size()); // it's an approximated size
@@ -512,7 +515,7 @@ void FastLioSam::visTimerCallback()
         corrected_pcd_map_pub_->publish(pclToPclRos(*voxelized_map, map_frame_));
         global_map_vis_switch_ = false;
     }
-    if (!global_map_vis_switch_ && corrected_pcd_map_pub_->get_subscription_count() == 0)
+    if (!global_map_vis_switch_ && ((vis_count_ - 1) % map_publish_freq_ == 0))
     {
         global_map_vis_switch_ = true;
     }

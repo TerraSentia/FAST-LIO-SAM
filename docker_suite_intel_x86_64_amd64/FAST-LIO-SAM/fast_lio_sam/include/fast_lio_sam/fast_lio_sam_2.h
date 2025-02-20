@@ -97,6 +97,8 @@ private:
     bool save_map_bag_ = false, save_map_pcd_ = false, save_in_kitti_format_ = false, save_pose_yml_ = false;
     int bkp_dt_;
     int pose_update_count_ = 0;
+    int vis_count_ = 0;
+    int map_publish_freq_ = 0;
 
     std::shared_ptr<gtsam::ISAM2> isam_handler_ = nullptr;
     std::shared_ptr<LoopClosure> loop_closure_ = nullptr;
