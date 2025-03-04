@@ -133,7 +133,10 @@ void FastLioSam::initPublishers()
 
 void FastLioSam::initSubscribers()
 {
-    odom_sub_ = std::make_unique<message_filters::Subscriber<nav_msgs::msg::Odometry>>(this, "Odometry");
+    odom_sub_ = std::make_unique<message_filters::Subscriber<nav_msgs::msg::Odometry>>(
+        this, 
+        "Odometry", 
+        rclcpp::SensorDataQoS().best_effort().get_rmw_qos_profile());
     pcd_sub_ = std::make_unique<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>>(this, "cloud_registered");
     sub_odom_pcd_sync_ = std::make_unique<message_filters::Synchronizer<odom_pcd_sync_pol>>(odom_pcd_sync_pol(10),*odom_sub_, *pcd_sub_);
     sub_odom_pcd_sync_->registerCallback(std::bind(&FastLioSam::odomPcdCallback, this, _1, _2));
@@ -186,8 +189,16 @@ void FastLioSam::odomPcdCallback(const nav_msgs::msg::Odometry::ConstSharedPtr &
         std::lock_guard<std::mutex> lock(realtime_pose_mutex_);
         odom_delta_ = odom_delta_ * last_odom_tf.inverse() * current_frame_.pose_eig_;
         current_frame_.pose_corrected_eig_ = last_corrected_pose_ * odom_delta_;
+
+        // Debugging corrected pose
+        if (DEBUG) {
+            RCLCPP_INFO(this->get_logger(), "Corrected Pose: [%f, %f, %f]",
+                        current_frame_.pose_corrected_eig_(0, 3),
+                        current_frame_.pose_corrected_eig_(1, 3),
+                        current_frame_.pose_corrected_eig_(2, 3));
+        }
+
         realtime_pose_pub_->publish(poseEigToPoseStamped(current_frame_.pose_corrected_eig_, map_frame_));
-        // broadcaster
         transform = poseEigToROSTf2(current_frame_.pose_corrected_eig_);
         transform_stamped = getTransformStamped(transform, map_frame_, "robot");
         tf_broadcaster_->sendTransform(transform_stamped);
@@ -306,6 +317,14 @@ void FastLioSam::odomPcdCallback(const nav_msgs::msg::Odometry::ConstSharedPtr &
                     diff_6_1.seconds());
         }
     }
+
+    if (DEBUG) {
+        RCLCPP_INFO(this->get_logger(), "Current corrected pose: [%f, %f, %f]",
+                    current_frame_.pose_corrected_eig_(0, 3),
+                    current_frame_.pose_corrected_eig_(1, 3),
+                    current_frame_.pose_corrected_eig_(2, 3));
+    }
+
     return;
 }
 
@@ -365,47 +384,37 @@ void FastLioSam::loopTimerCallback()
 
 void FastLioSam::visTimerCallback()
 {
-    if ( DEBUG ) { RCLCPP_INFO(this->get_logger(), "vis timer 1"); }
-    if (!is_initialized_)
+    if (DEBUG) { RCLCPP_INFO(this->get_logger(), "vis timer 1"); }
+
+    if (!loop_added_flag_vis_) { return; }
+
+    gtsam::Values corrected_esti_copied;
     {
-        return;
+        std::lock_guard<std::mutex> lock(realtime_pose_mutex_);
+        corrected_esti_copied = corrected_esti_;
     }
-    if ( DEBUG ) { RCLCPP_INFO(this->get_logger(), "vis_timer 2"); }
+
+    pcl::PointCloud<pcl::PointXYZ> corrected_odoms;
+    nav_msgs::msg::Path corrected_path;
+    corrected_path.header.frame_id = map_frame_;
 
     auto tv1 = this->get_clock()->now();
-    //// 1. if loop closed, correct vis data
-    if (loop_added_flag_vis_)
-    // copy and ready
+
+    for (size_t i = 0; i < corrected_esti_copied.size(); ++i)
     {
-        gtsam::Values corrected_esti_copied;
-        pcl::PointCloud<pcl::PointXYZ> corrected_odoms;
-        nav_msgs::msg::Path corrected_path;
-        {
-            std::lock_guard<std::mutex> lock(realtime_pose_mutex_);
-            corrected_esti_copied = corrected_esti_;
-        }
-        // correct pose and path
-        for (size_t i = 0; i < corrected_esti_copied.size(); ++i)
-        {
-            gtsam::Pose3 pose_ = corrected_esti_copied.at<gtsam::Pose3>(i);
-            corrected_odoms.points.emplace_back(pose_.translation().x(), pose_.translation().y(), pose_.translation().z());
-            corrected_path.poses.push_back(gtsamPoseToPoseStamped(pose_, map_frame_));
-        }
-        // update vis of loop constraints
-        if (!loop_idx_pairs_.empty())
-        {
-            loop_detection_pub_->publish(getLoopMarkers(corrected_esti_copied));
-        }
-        // update with corrected data
-        {
-            if ( DEBUG ) { RCLCPP_INFO(this->get_logger(), "vis timer before corrected data"); }
-            std::lock_guard<std::mutex> lock(vis_mutex_);
-            corrected_odoms_ = corrected_odoms;
-            corrected_path_.poses = corrected_path.poses;
-            if ( DEBUG ) { RCLCPP_INFO(this->get_logger(), "vis timer after corrected data"); }
-        }
-        loop_added_flag_vis_ = false;
+        gtsam::Pose3 pose_ = corrected_esti_copied.at<gtsam::Pose3>(i);
+        corrected_odoms.points.emplace_back(pose_.translation().x(), pose_.translation().y(), pose_.translation().z());
+        corrected_path.poses.push_back(gtsamPoseToPoseStamped(pose_, map_frame_));
     }
+
+    {
+        std::lock_guard<std::mutex> lock(vis_mutex_);
+        corrected_odoms_ = corrected_odoms;
+        corrected_path_ = corrected_path;
+    }
+
+    loop_added_flag_vis_ = false;
+
     //// 2. publish odoms, paths
     {
         if ( DEBUG ) { RCLCPP_INFO(this->get_logger(), "vis timer for publishing"); }
@@ -437,6 +446,17 @@ void FastLioSam::visTimerCallback()
     {
         global_map_vis_switch_ = true;
     }
+
+    if (DEBUG) {
+        RCLCPP_INFO(this->get_logger(), "Corrected path size: %zu", corrected_path_.poses.size());
+        for (const auto &pose : corrected_path_.poses) {
+            RCLCPP_INFO(this->get_logger(), "Pose: [%f, %f, %f]",
+                        pose.pose.position.x,
+                        pose.pose.position.y,
+                        pose.pose.position.z);
+        }
+    }
+
     auto tv2 = this->get_clock()->now();
     RCLCPP_INFO(this->get_logger(), "vis: %f", (tv2 - tv1).seconds());
     return;
