@@ -88,13 +88,19 @@ RUN mkdir -p src \
     && cp -f package_ROS2.xml package.xml \
     && rm -rf launch_ROS1
 RUN cd /root/ros2_ws/src \
-    && mkdir -p FAST-LIO-SAM
+    && mkdir -p FAST-LIO-SAM \
+    && mkdir -p FAST-LIO-SAM/fast_lio_sam \
+    && mkdir -p FAST-LIO-SAM/imgs \
+    && mkdir -p FAST-LIO-SAM/third_party 
+COPY docker_suite_intel_x86_64_amd64/livox_config/HAP_config.json src/livox_ros_driver2/config/HAP_config.json
+COPY docker_suite_intel_x86_64_amd64/livox_launch/hap.launch.py src/livox_ros_driver2/launch/hap.launch.py
+COPY docker_suite_intel_x86_64_amd64/livox_launch_ROS2/hap.launch.py src/livox_ros_driver2/launch_ROS2/hap.launch.py
 
-COPY livox_config/HAP_config.json src/livox_ros_driver2/config/HAP_config.json
-COPY livox_launch/hap.launch.py src/livox_ros_driver2/launch/hap.launch.py
-COPY livox_launch_ROS2/hap.launch.py src/livox_ros_driver2/launch_ROS2/hap.launch.py
-
-COPY ./FAST-LIO-SAM src/FAST-LIO-SAM
+COPY ./fast_lio_sam src/FAST-LIO-SAM/fast_lio_sam
+COPY ./imgs src/FAST-LIO-SAM/imgs
+COPY ./third_party src/FAST-LIO-SAM/third_party
+COPY ./LICENSE src/FAST-LIO-SAM/
+COPY ./*.md src/FAST-LIO-SAM/
 # Copy launch files and prepare the environment
 RUN cp -rf src/livox_ros_driver2/launch_ROS2 src/livox_ros_driver2/launch
 

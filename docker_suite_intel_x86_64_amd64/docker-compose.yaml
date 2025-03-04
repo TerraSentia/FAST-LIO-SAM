@@ -4,7 +4,7 @@ services:
     user: root
     restart: always
     network_mode: host
-    image: fast_lio_sam:devel_ros2
+    image: fast_lio_sam:devel_ros2-aditya
     working_dir: /root/ros2_ws
     entrypoint: [""]
     command: bash -c "source /root/ros2_ws/install/setup.bash && ros2 launch fast_lio_sam run_lio_all.launch.py sam_rviz:=false lio_config_file:=avia.yaml sam_delay:=5"
