@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package format="3">
+<!--<package format="3">-->
 <package format="3">
   <name>fast_lio_sam</name>
   <version>0.0.0</version>
@@ -10,10 +10,7 @@
   <author email="eungchang_mason@kaist.ac.kr">Eungchang Mason Lee</author>
 
   <maintainer email="akshay.d@earthsense.co">Akshay</maintainer>
-  <author email="eungchang_mason@kaist.ac.kr">Eungchang Mason Lee</author>
-
-  <maintainer email="akshay.d@earthsense.co">Akshay</maintainer>
-
+  <maintainer email="aditya.varadaraj@earthsense.co">Aditya Varadaraj</maintainer>
   <license>BSD3</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
@@ -29,7 +26,6 @@
   <depend>yaml-cpp</depend>
   
   <export>
-    <build_type>ament_cmake</build_type>
     <build_type>ament_cmake</build_type>
   </export>
 

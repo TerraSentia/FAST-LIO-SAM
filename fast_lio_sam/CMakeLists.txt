@@ -8,18 +8,6 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -Wextra ${CMAKE_CXX_FLAGS}")
 
 
-
-find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(nav_msgs REQUIRED)
-find_package(visualization_msgs REQUIRED)
-find_package(message_filters REQUIRED)
-find_package(tf2 REQUIRED)
-find_package(tf2_ros REQUIRED)
-find_package(tf2_eigen REQUIRED)
-
-
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
@@ -167,5 +155,4 @@ ament_export_dependencies(rosidl_default_runtime rclcpp)
 ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME}_modules)
 
-ament_package()
 ament_package()
