@@ -18,12 +18,26 @@ find_package(message_filters REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_eigen REQUIRED)
+
+
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(message_filters REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_eigen REQUIRED)
 find_package(PCL REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(pcl_msgs REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(pcl_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(GTSAM REQUIRED)
+
 
 if(PCL_FOUND)
   message(WARNING "PCL_VER: ${PCL_VERSION}, and PCL_DIR: ${PCL_INCLUDE_DIRS}")
@@ -37,6 +51,7 @@ endif()
 
 include_directories(
   include
+  ${ament_INCLUDE_DIRS}
   ${ament_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
@@ -114,5 +129,43 @@ endif(BUILD_TESTING)
 ament_export_dependencies(rosidl_default_runtime rclcpp) 
 ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME}_modules)
+ament_target_dependencies(${PROJECT_NAME}_node ${dependencies})
+target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_modules)
 
+install(
+  DIRECTORY include/
+  DESTINATION include
+)
+
+install(TARGETS ${PROJECT_NAME}_modules
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+)
+
+install(
+  TARGETS ${PROJECT_NAME}_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(DIRECTORY launch 
+  DESTINATION share/${PROJECT_NAME} 
+  FILES_MATCHING PATTERN "*.py"
+)
+
+install(DIRECTORY config 
+  DESTINATION share/${PROJECT_NAME}
+)
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)  
+  ament_lint_auto_find_test_dependencies()
+endif(BUILD_TESTING)
+
+ament_export_dependencies(rosidl_default_runtime rclcpp) 
+ament_export_include_directories(include)
+ament_export_libraries(${PROJECT_NAME}_modules)
+
+ament_package()
 ament_package()
