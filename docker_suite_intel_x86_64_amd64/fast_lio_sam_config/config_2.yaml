@@ -1,0 +1,30 @@
+fast_lio_sam_node:
+  ros__parameters:
+    basic:
+      map_frame: "map"
+      loop_update_hz: 2.0
+      vis_hz: 1.0
+    
+    keyframe:
+      keyframe_threshold: 1.5
+      num_submap_keyframes: 5
+
+    loop:
+      loop_detection_radius: 35.0
+      loop_detection_timmediff_threshold: 30.0
+
+    icp:
+      icp_voxel_resolution: 0.3
+      icp_score_threshold: 1.5
+    
+    result:
+      save_voxel_resolution: 0.3
+      save_map_pcd: true
+      save_map_bag: true
+      save_in_kitti_format: true
+      seq_name: "sequence"
+      save_pose_yml: true
+      yaml_file_name: "latest_lidar_pose.yaml"
+      yaml_file_name_bkp: "latest_lidar_pose_bkp.yaml"
+      bkp_dt: 2 # Backup to be taken once in bkp_dt messages
+      map_publish_freq: 5 #10  # For every map_publish_freq calls to visTimercallback, map will be published once

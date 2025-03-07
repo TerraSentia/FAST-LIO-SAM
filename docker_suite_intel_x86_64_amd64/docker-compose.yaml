@@ -1,0 +1,30 @@
+services:
+  livox_lidar:
+    container_name: docker_fast_lio_sam
+    user: root
+    restart: always
+    network_mode: host
+    image: fast_lio_sam:devel_ros2
+    working_dir: /root/ros2_ws
+    entrypoint: [""]
+    command: bash -c "source /root/ros2_ws/install/setup.bash && ros2 launch fast_lio_sam run_lio_all.launch.py sam_rviz:=false lio_config_file:=avia.yaml sam_delay:=5"
+    tty: true
+    privileged: true
+    labels:
+      host: "companion"
+    environment:
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      - RCUTILS_COLORIZED_OUTPUT=1
+      - ROS_DOMAIN_ID=0
+      - ROS_LOG_DIR=/var/log
+      - LD_LIBRARY_PATH=/usr/local/lib
+      - DISPLAY=$DISPLAY
+    volumes:
+      - /var/log:/var/log
+      # - ./FAST-LIO-SAM/fast_lio_sam/launch:/root/ros2_ws/install/fast_lio_sam/share/fast_lio_sam/launch
+      - ./fast_lio_sam_config:/root/ros2_ws/install/fast_lio_sam/share/fast_lio_sam/config
+      # - ./FAST-LIO-SAM/third_party/FAST_LIO/launch:/root/ros2_ws/install/fast_lio/share/fast_lio/launch
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    build:
+      context: .
+      dockerfile: Dockerfile
