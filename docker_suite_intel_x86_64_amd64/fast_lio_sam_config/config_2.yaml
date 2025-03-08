@@ -4,7 +4,29 @@ fast_lio_sam_node:
       map_frame: "map"
       loop_update_hz: 2.0
       vis_hz: 1.0
-    
+      debug_mode: false
+      publish_ori_msgs: false
+    topics:
+      namespace: "backyardbot"
+      # Subscriptions
+      auto_mode_topic: "enable_auto_mode"
+      nav_mode_topic: "nav_mode"
+      fast_lio_odom_topic: "Odometry"
+      fast_lio_pcl_topic: "cloud_registered"
+      save_dir_topic: "save_dir"
+      # Publishers
+      ori_odom_topic: "ori_odom"
+      corrected_odom_topic: "corrected_odom"
+      corrected_map_topic: "corrected_map"
+      corrected_current_pcd_topic: "corrected_current_pcd"
+      debug_src_topic: "src"
+      debug_dst_topic: "dst"
+      debug_aligned_topic: "aligned"
+      output_pose_topic: "pose_stamped"
+      ori_path_topic: "ori_path"
+      corrected_path_topic: "corrected_path"
+      loop_detection_topic: "loop_detection"
+
     keyframe:
       keyframe_threshold: 1.5
       num_submap_keyframes: 5
@@ -27,4 +49,4 @@ fast_lio_sam_node:
       yaml_file_name: "latest_lidar_pose.yaml"
       yaml_file_name_bkp: "latest_lidar_pose_bkp.yaml"
       bkp_dt: 2 # Backup to be taken once in bkp_dt messages
-      map_publish_freq: 5 #10  # For every map_publish_freq calls to visTimercallback, map will be published once
+      map_publish_freq: 10  # For every map_publish_freq calls to visTimercallback, map will be published once

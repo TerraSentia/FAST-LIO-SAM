@@ -18,7 +18,7 @@
 #include <Eigen/Dense>
 
 #include <rclcpp/rclcpp.hpp>
-
+#include <rclcpp/qos.hpp>
 #include <fast_lio_sam/pose_pcd.hpp>
 #include <fast_lio_sam/utilities.hpp>
 #include <fast_lio_sam/loop_closure.h>
@@ -35,6 +35,7 @@
 
 #include "yaml-cpp/yaml.h"
 #include "std_msgs/msg/string.hpp"
+#include "std_msgs/msg/int8.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "geometry_msgs/msg/point_stamped.hpp"
@@ -71,11 +72,31 @@ public:
 private:
     LoopClosureConfig lc_config_;
 
+    rclcpp::QoS std_qos_ = rclcpp::QoS(rclcpp::KeepLast(1));
+    
+
     std::string map_frame_;
     std::string package_path_;
     std::string seq_name_;
     std::string yaml_file_name_;
     std::string yaml_file_name_bkp_;
+    std::string namespace_;
+    std::string auto_mode_topic_;
+    std::string nav_mode_topic_;
+    std::string fast_lio_odom_topic_;
+    std::string fast_lio_pcl_topic_;
+    std::string save_dir_topic_;
+    std::string ori_odom_topic_;
+    std::string corrected_odom_topic_;
+    std::string corrected_map_topic_;
+    std::string corrected_current_pcd_topic_;
+    std::string debug_src_topic_;
+    std::string debug_dst_topic_;
+    std::string debug_aligned_topic_;
+    std::string output_pose_topic_;
+    std::string ori_path_topic_;
+    std::string corrected_path_topic_;
+    std::string loop_detection_topic_;
 
     std::mutex realtime_pose_mutex_, keyframes_mutex_, graph_mutex_, vis_mutex_;
 
@@ -90,6 +111,8 @@ private:
     int current_keyframe_idx_ = 0;
     int sub_key_num_;
 
+    bool debug_mode_ = false;
+    bool publish_ori_msgs_ = false;
     bool is_initialized_ = false;
     bool loop_added_flag_ = false;
     bool loop_added_flag_vis_ = false;
@@ -99,6 +122,11 @@ private:
     int pose_update_count_ = 0;
     int vis_count_ = 0;
     int map_publish_freq_ = 0;
+
+    int prev_auto_mode_ = 0;
+    int curr_auto_mode_ = 0;
+    std::string prev_nav_mode_ = "";
+    std::string curr_nav_mode_ = "";
 
     std::shared_ptr<gtsam::ISAM2> isam_handler_ = nullptr;
     std::shared_ptr<LoopClosure> loop_closure_ = nullptr;
@@ -136,6 +164,9 @@ private:
 
     // not so important for now
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr sub_save_flag_;
+    // AUto and nav mode
+    rclcpp::Subscription<std_msgs::msg::Int8>::SharedPtr auto_mode_sub_;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr nav_mode_sub_;
     
     rclcpp::TimerBase::SharedPtr loop_timer_;
     rclcpp::TimerBase::SharedPtr vis_timer_;
@@ -147,7 +178,9 @@ private:
     void odomPcdCallback(const nav_msgs::msg::Odometry::ConstSharedPtr &odom_msg, const sensor_msgs::msg::PointCloud2::ConstSharedPtr &pcd_msg);
     void saveFlagCallback(const std_msgs::msg::String::SharedPtr msg);
     void savePoseToYaml(const geometry_msgs::msg::PoseStamped::ConstSharedPtr &pose_msg, const std::string& filename);
-    
+    void autoModeCallback(const std_msgs::msg::Int8::SharedPtr auto_msg);
+    void navModeCallback(const std_msgs::msg::String::SharedPtr nav_msg);
+    void resetFastLioSam();
     
     
 };
