@@ -6,6 +6,8 @@ fast_lio_sam_node:
       vis_hz: 1.0
       debug_mode: false
       publish_ori_msgs: false
+      reset_on_auto: true
+      reset_on_nav: false
     topics:
       namespace: "backyardbot"
       # Subscriptions

@@ -81,6 +81,8 @@ void FastLioSam::loadParams()
     this->declare_parameter("basic.vis_hz", 0.5);
     this->declare_parameter("basic.debug_mode", false);
     this->declare_parameter("basic.publish_ori_msgs", false);
+    this->declare_parameter("basic.reset_on_auto", false);
+    this->declare_parameter("basic.reset_on_nav", false);
     // namespace for auto and nav mode topics
     this->declare_parameter("topics.namespace", "");
     // Subscriber topics
@@ -128,6 +130,8 @@ void FastLioSam::loadParams()
     this->get_parameter("basic.vis_hz", vis_hz_);
     this->get_parameter("basic.debug_mode", debug_mode_);
     this->get_parameter("basic.publish_ori_msgs", publish_ori_msgs_);
+    this->get_parameter("basic.reset_on_auto", reset_on_auto_);
+    this->get_parameter("basic.reset_on_nav", reset_on_nav_);
 
     // namespace for auto and nav mode topics
     this->get_parameter("topics.namespace", namespace_);
@@ -300,14 +304,14 @@ void FastLioSam::savePoseToYaml(const geometry_msgs::msg::PoseStamped::ConstShar
 void FastLioSam::autoModeCallback(const std_msgs::msg::Int8::SharedPtr auto_msg){
     prev_auto_mode_ = curr_auto_mode_;
     curr_auto_mode_ = auto_msg->data;
-    if(curr_auto_mode_ != prev_auto_mode_){
+    if((curr_auto_mode_ != prev_auto_mode_) && reset_on_auto_){
         resetFastLioSam();
     }
 }
 void FastLioSam::navModeCallback(const std_msgs::msg::String::SharedPtr nav_msg){
     prev_nav_mode_ = curr_nav_mode_;
     curr_nav_mode_ = nav_msg->data;
-    if(curr_nav_mode_ != prev_nav_mode_){
+    if((curr_nav_mode_ != prev_nav_mode_) && reset_on_nav_){
         resetFastLioSam();
     }
 }
