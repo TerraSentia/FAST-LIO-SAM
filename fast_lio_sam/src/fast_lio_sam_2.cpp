@@ -336,6 +336,9 @@ void FastLioSam::resetFastLioSam(){
     corrected_path_ = nav_msgs::msg::Path();
     odom_path_.header.frame_id = map_frame_;
     corrected_path_.header.frame_id = map_frame_;
+    // To reset last pose (current_frame_) you will also need to reset FAST LIO output odom_msg and pcd_msg (see odomPcdCallback)
+    // If you don't, it causes a transformation - input pose mismatch causing weird behavior
+    // current_frame_ = PosePcd();
     is_initialized_ = false;
     // [Comment/TODO]: Is timer reset required? If so:
     // timer_->cancel(); // Stop the timer
